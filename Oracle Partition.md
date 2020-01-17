@@ -62,7 +62,46 @@ INTERVAL (NUMTOYMINTERVAL(1,'MONTH'))
    PARTITION part_01 values LESS THAN (TO_DATE('01-NOV-2007','DD-MON-YYYY'))
 );
 
+# Automatic List Partitioning
 
+CREATE TABLE orders
+(
+  id            NUMBER,
+  country_code  VARCHAR2(5),
+  customer_id   NUMBER,
+  order_date    DATE,
+  order_total   NUMBER(8,2),
+  CONSTRAINT orders_pk PRIMARY KEY (id)
+)
+PARTITION BY LIST (country_code) AUTOMATIC
+(
+  PARTITION part_usa VALUES ('USA'),
+  PARTITION part_uk_and_ireland VALUES ('GBR', 'IRL')
+);
+
+Note: if AUTOMATIC Not Given at time of creation use below
+
+ALTER TABLE orders SET PARTITIONING AUTOMATIC;
+
+Partition name will be like  SYS_P5....
+
+# Multi column list
+
+FRom 12c onwards
+
+CREATE TABLE t1 (
+  id               NUMBER,
+  country_code     VARCHAR2(3),
+  record_type      VARCHAR2(5),
+  descriptions     VARCHAR2(50),
+  CONSTRAINT t1_pk PRIMARY KEY (id)
+)
+PARTITION BY LIST (country_code, record_type) AUTOMATIC
+(
+  PARTITION part_gbr_abc VALUES (('GBR','A'), ('GBR','B'), ('GBR','C')),
+  PARTITION part_ire_ab  VALUES (('IRE','A'), ('IRE','B')),
+  PARTITION part_usa_a   VALUES (('USA','A'))
+);
 
 # Split Partition
 
@@ -96,3 +135,66 @@ Global: Better to use in 1 or 2 partition and having less data.This need everyti
 
 # Ref Exchange Partition
 https://www.akadia.com/services/ora_exchange_partition.html
+
+
+# Read Only and Read Write Partition:
+
+From 12c Onwards
+
+Syntax:
+
+READ ONLY
+
+READ WRITE
+
+Ex1
+
+
+CREATE TABLE t1 (
+  id            NUMBER,
+  code          VARCHAR2(10),
+  description   VARCHAR2(50),
+  created_date  DATE,
+  CONSTRAINT t1_pk PRIMARY KEY (id)
+)
+PARTITION BY RANGE (created_date)
+(
+  PARTITION t1_2016 VALUES LESS THAN (TO_DATE('01-JAN-2017','DD-MON-YYYY')),
+  PARTITION t1_2017 VALUES LESS THAN (TO_DATE('01-JAN-2018','DD-MON-YYYY')),
+  PARTITION t1_2018 VALUES LESS THAN (TO_DATE('01-JAN-2019','DD-MON-YYYY')) READ ONLY
+);
+
+
+EX2:
+
+REATE TABLE t1 (
+  id            NUMBER,
+  code          VARCHAR2(10),
+  description   VARCHAR2(50),
+  created_date  DATE,
+  CONSTRAINT t1_pk PRIMARY KEY (id)
+)
+READ ONLY
+PARTITION BY LIST (code)
+SUBPARTITION BY RANGE (created_date) (
+  PARTITION part_gbr VALUES ('GBR') READ WRITE (
+    SUBPARTITION subpart_gbr_2016 VALUES LESS THAN (TO_DATE('01-JUL-2017', 'DD-MON-YYYY')) READ ONLY,
+    SUBPARTITION subpart_gbr_2017 VALUES LESS THAN (TO_DATE('01-JUL-2018', 'DD-MON-YYYY')),
+    SUBPARTITION subpart_gbr_2018 VALUES LESS THAN (TO_DATE('01-JUL-2019', 'DD-MON-YYYY'))
+  ),
+  PARTITION part_ire VALUES ('IRE') (
+    SUBPARTITION subpart_ire_2016 VALUES LESS THAN (TO_DATE('01-JUL-2017', 'DD-MON-YYYY')),
+    SUBPARTITION subpart_ire_2017 VALUES LESS THAN (TO_DATE('01-JUL-2018', 'DD-MON-YYYY')) READ WRITE,
+    SUBPARTITION subpart_ire_2018 VALUES LESS THAN (TO_DATE('01-JUL-2019', 'DD-MON-YYYY')) READ WRITE
+  )
+);
+
+# Merge Partition
+
+ALTER TABLE table name
+MERGE
+  PARTITIONS Partition name1, Partition name2
+  INTO PARTITION Partition name
+  ONLINE;
+  
+  

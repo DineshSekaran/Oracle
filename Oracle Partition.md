@@ -81,7 +81,8 @@ EXCHANGE PARTITION
 
 # Partition Exchange
 
-#Syntax
+# Syntax
+
 alter table table name exchange partition partition name with table tablename;
 
 If the table or partitioned table involved in the exchange operation has a primary key or unique constraint enabled, then the exchange operation will be performed as if WITH VALIDATION were specified in order to maintain the integrity of the constraints. 

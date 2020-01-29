@@ -108,6 +108,64 @@ close c_name;
 end;
 
 
+# BULK COLLECT With USER defined Exception and BULK Exceptions
+
+ type array is table of t%rowtype index by binary_integer; 
+ 
+ data array; 
+ 
+ errors NUMBER; 
+ 
+ dml_errors EXCEPTION; 
+ 
+ l_cnt number := 0; 
+ 
+ PRAGMA exception_init(dml_errors, -24381); 
+ 
+ cursor c is select * from t; 
+ 
+ BEGIN 
+ 
+ open c; 
+ 
+ loop 
+ 
+ fetch c BULK COLLECT INTO data LIMIT 100; 
+ 
+ begin 
+ 
+ FORALL i IN 1 .. data.count SAVE EXCEPTIONS 
+ 
+ insert into t2 values data(i); 
+ 
+ EXCEPTION  WHEN dml_errors THEN 
+ 
+ errors := SQL%BULK_EXCEPTIONS.COUNT; 
+ 
+ l_cnt := l_cnt + errors; 
+ 
+ FOR i IN 1..errors LOOP 
+ 
+ dbms_output.put_line  ('Error occurred during iteration ' ||  SQL%BULK_EXCEPTIONS(i).ERROR_INDEX ||  ' Oracle error is ' || 
+ SQL%BULK_EXCEPTIONS(i).ERROR_CODE ); 
+ 
+ end loop; 
+ 
+ end; 
+ 
+exit when c%notfound; 
+
+ END LOOP; 
+ 
+ close c; 
+ 
+ dbms_output.put_line( l_cnt || ' total errors' ); 
+ 
+ end; 
+/ 
+
+
+
 # Collections Methods
 
 set serveroutput on;

@@ -1,4 +1,4 @@
-# ROW PROCESSING
+# ROW PROCESSING with Normal Cursor
 
 declare
 
@@ -25,7 +25,7 @@ close c1;
 end;
 
 
-# Bulk Processing
+# Bulk Processing With Ref Cursor
 
 set serveroutput on;
 
@@ -64,4 +64,91 @@ exit when v_t1%notfound;
 end loop;
 
 close v_t1;
+
 end;
+
+
+# Bulk Processing With normal Cursor and cursor%rowType and Type method
+
+
+set serveroutput on;
+
+declare
+
+cursor c_name is
+
+select * from emp;
+
+type c_emp is table of c_name%rowtype index by pls_integer;
+
+v_c_emp c_emp;
+
+
+begin
+
+open c_name ; loop
+
+fetch c_name bulk collect into v_c_emp limit 10;
+
+for i in 1..v_c_emp.count loop
+
+
+dbms_output.put_line(v_c_emp(i).ename||'-'||v_c_emp(i).sal);
+
+exit when v_c_emp=0;
+
+end loop;
+
+exit when c_name%notfound;
+
+end loop;
+
+close c_name;
+
+end;
+
+
+# Collections Methods
+
+set serveroutput on;
+
+declare
+
+type nt_tab is table of number;
+
+col_var nt_tab:=nt_tab(10,20,30,40,50);
+
+begin
+
+for i in col_var.first.. col_var.last loop
+
+dbms_output.put_line(col_var(i));
+
+end loop;
+
+end;
+
+o/p: 10,20,30,40,50
+
+# Delete
+
+set serveroutput on;
+
+declare
+
+type nt_tab is table of number;
+
+col_var nt_tab:=nt_tab(10,20,30,40,50);
+
+begin
+col_var.delete(1);
+
+for i in col_var.first.. col_var.last loop
+
+dbms_output.put_line(col_var(i));
+
+end loop;
+
+end;
+
+o/p: 20,30,40,50
